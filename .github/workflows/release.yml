@@ -3,73 +3,53 @@ name: Release
 on:
   release:
     types: [created]
-  push:
-    branches: [prod]
 
 jobs:
-
-  build:
-    name: Build
+  release:
+    name: Release ${{ matrix.target }}
+    runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        go-version: [1.19.x]
-        os: [ubuntu-latest, macos-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
-    
-    steps:
+        include:
+          - target: x86_64-unknown-linux-musl
+            goos: linux
+            goarch: amd64
+            archive: zip
+          - target: x86_64-pc-windows-gnu
+            goos: windows
+            goarch: amd64
+            archive: zip
+          - target: x86_64-apple-darwin
+            goos: darwin
+            goarch: amd64
+            archive: zip
 
-    - name: Check out code
-      uses: actions/checkout@v3
+    steps:
+    - uses: actions/checkout@v3
 
     - name: Set up Go
       uses: actions/setup-go@v3
       with:
-        go-version: ${{ matrix.go-version }}
+        go-version: 1.19.x
 
     - name: Build
       run: |
-        export GOOS=${{ runner.os }}
-        if [ "$GOOS" = "linux" ]; then
-          export BINARY_NAME=ypd
-          export ARCHIVE_NAME=ypd.tar.gz
-        elif [ "$GOOS" = "windows" ]; then
-          export BINARY_NAME=ypd.exe
-        elif [ "$GOOS" = "darwin" ]; then
-          export BINARY_NAME=ypd
-          export ARCHIVE_NAME=ypd.dmg
-        fi
+        export GOOS=${{ matrix.goos }}
+        export GOARCH=${{ matrix.goarch }}
         go build
-        if [ -n "$ARCHIVE_NAME" ]; then
-          tar -czf $ARCHIVE_NAME $BINARY_NAME
+        if [ "${{ matrix.archive }}" == "zip" ]; then
+          zip ypd.${{ matrix.target }}.zip ypd
+        else
+          tar -czf ypd.${{ matrix.target }}.${{ matrix.archive }} ypd
         fi
 
     - name: Upload Release Asset
-      if: github.event_name == 'release'
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ github.event.release.upload_url }}
-        asset_path: ./${{ env.BINARY_NAME }}
-        asset_name: ${{ env.BINARY_NAME }}
+        asset_path: ./app.${{ matrix.target }}.${{ matrix.archive }}
+        asset_name: app-${{ matrix.target }}.${{ matrix.archive }}
         asset_content_type: application/octet-stream
-
-    - name: Upload Archive Asset
-      if: github.event_name == 'release' && env.ARCHIVE_NAME != ''
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ github.event.release.upload_url }}
-        asset_path: ./${{ env.ARCHIVE_NAME }}
-        asset_name: ${{ env.ARCHIVE_NAME }}
-        asset_content_type: application/gzip
-
-    - name: Upload Artifacts
-      if: github.event_name == 'push'
-      uses: actions/upload-artifact@v3
-      with:
-        name: ${{ runner.os }}
-        path: |
-          ./${{ env.BINARY_NAME }}
-          ./${{ env.ARCHIVE_NAME }}
