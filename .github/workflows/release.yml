@@ -26,10 +26,10 @@ jobs:
     - name: Build
       run: |
         export GOOS=${{ runner.os }}
-        if [ "$GOOS" = "Linux" ]; then
-          export BINARY_NAME=ypd
-          export ARCHIVE_NAME=ypd.tar.gz
-        elif [ "$GOOS" = "windows" ]; then
+        # if [ "$GOOS" = ""  ]; then
+        #   export BINARY_NAME=ypd
+        #   export ARCHIVE_NAME=ypd.tar.gz
+        if [ "$GOOS" = "windows" ]; then
           export BINARY_NAME=ypd.exe
         elif [ "$GOOS" = "darwin" ]; then
           export BINARY_NAME=ypd
