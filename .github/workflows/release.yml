@@ -37,7 +37,7 @@ jobs:
         fi
         go build -o $BINARY_NAME
         if [ -n "$ARCHIVE_NAME" ]; then
-          tar -czf $ARCHIVE_NAME -o $BINARY_NAME
+          tar -czf $ARCHIVE_NAME  $BINARY_NAME
         fi
 
     - name: Upload Release Asset
