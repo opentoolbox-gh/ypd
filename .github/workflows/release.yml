@@ -3,11 +3,15 @@ name: Release
 on:
   release:
     types: [created]
+  push:
+    branches: [prod]
 
 jobs:
   release:
     name: Release ${{ matrix.target }}
     runs-on: ubuntu-latest
+    permissions:
+       contents: write
     strategy:
       fail-fast: false
       matrix:
@@ -16,7 +20,7 @@ jobs:
             goos: linux
             goarch: amd64
             archive: zip
-          -  target: x86_64-pc-windows-gnu
+          - target: x86_64-pc-windows-gnu
             goos: windows
             goarch: amd64
             archive: zip
@@ -31,17 +35,17 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v3
       with:
-        go-version: 1.19.x
+        go-version: 1.22.2
 
     - name: Build
       run: |
         export GOOS=${{ matrix.goos }}
         export GOARCH=${{ matrix.goarch }}
-        go build -o app
+        go build
         if [ "${{ matrix.archive }}" == "zip" ]; then
-          zip app.${{ matrix.target }}.zip app
+          zip ypd.${{ matrix.target }}.zip ypd
         else
-          tar -czf app.${{ matrix.target }}.${{ matrix.archive }} app
+          tar -czf ypd.${{ matrix.target }}.${{ matrix.archive }} ypd
         fi
 
     - name: Upload Release Asset
@@ -50,6 +54,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ github.event.release.upload_url }}
-        asset_path: ./app.${{ matrix.target }}.${{ matrix.archive }}
-        asset_name: app-${{ matrix.target }}.${{ matrix.archive }}
+        asset_path: ./ypd.${{ matrix.target }}.${{ matrix.archive }}
+        asset_name: ypd-${{ matrix.target }}.${{ matrix.archive }}
         asset_content_type: application/octet-stream
