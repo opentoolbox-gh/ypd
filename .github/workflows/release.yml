@@ -1,10 +1,13 @@
-name: release
+name: Release
 
 on:
+  release:
+    types: [created]
   push:
     branches: [prod]
 
 jobs:
+
   build:
     name: Build
     strategy:
@@ -26,21 +29,22 @@ jobs:
     - name: Build
       run: |
         export GOOS=${{ runner.os }}
-        # if [ "$GOOS" = ""  ]; then
-        #   export BINARY_NAME=ypd
-        #   export ARCHIVE_NAME=ypd.tar.gz
-        if [ "$GOOS" = "windows" ]; then
+        if [ "$GOOS" = "linux" ]; then
+          export BINARY_NAME=ypd
+          export ARCHIVE_NAME=ypd.tar.gz
+        elif [ "$GOOS" = "windows" ]; then
           export BINARY_NAME=ypd.exe
         elif [ "$GOOS" = "darwin" ]; then
           export BINARY_NAME=ypd
           export ARCHIVE_NAME=ypd.dmg
         fi
-        go build
+        go build -o $BINARY_NAME
         if [ -n "$ARCHIVE_NAME" ]; then
-          tar -czf $ARCHIVE_NAME  $BINARY_NAME
+          tar -czf $ARCHIVE_NAME $BINARY_NAME
         fi
 
     - name: Upload Release Asset
+      if: github.event_name == 'release'
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -51,7 +55,7 @@ jobs:
         asset_content_type: application/octet-stream
 
     - name: Upload Archive Asset
-      if: env.ARCHIVE_NAME != 'ypd'
+      if: github.event_name == 'release' && env.ARCHIVE_NAME != ''
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -60,3 +64,12 @@ jobs:
         asset_path: ./${{ env.ARCHIVE_NAME }}
         asset_name: ${{ env.ARCHIVE_NAME }}
         asset_content_type: application/gzip
+
+    - name: Upload Artifacts
+      if: github.event_name == 'push'
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ runner.os }}
+        path: |
+          ./${{ env.BINARY_NAME }}
+          ./${{ env.ARCHIVE_NAME }}
