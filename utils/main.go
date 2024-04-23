@@ -32,7 +32,7 @@ type ConvertVideoResp struct {
 
 func makePlayList(playListUrl string) string {
 	var url string = fmt.Sprintf("https://loader.to/api/ajax/playlistJSON?format=1080&api=dfcb6d76f2f6a9894gjkege8a4ab232222&limit=100&url=%s", playListUrl)
-	fmt.Println(url)
+	fmt.Println("Resolving playlist songs.....")
 	return url
 }
 
@@ -42,8 +42,6 @@ func ListSongs(url string) []Video {
 		panic(err)
 	}
 	defer resp.Body.Close()
-
-	fmt.Println("Response status ", resp.Status)
 
 	var videos []Video
 
@@ -74,7 +72,7 @@ func ConvertVideo(vidId string, k string) ConvertVideoResp {
 	resp, _ := client.Do(req)
 
 	if resp.StatusCode != http.StatusOK {
-		log.Printf("Request failed with response code: %d", resp.StatusCode)
+		log.Printf("Request failed with response code: %d\n", resp.StatusCode)
 	}
 
 	error := json.NewDecoder(resp.Body).Decode(&response)
@@ -160,10 +158,10 @@ func DownloadFile(fileUrl, fileName string) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to download file: %s", resp.Status)
+		return fmt.Errorf("failed to download file: %s\n", resp.Status)
 	}
 
-	out, err := os.Create(fileName)
+	out, err := os.Create(fileName + ".mp3")
 	if err != nil {
 		return err
 	}
@@ -176,4 +174,18 @@ func DownloadFile(fileUrl, fileName string) error {
 
 	fmt.Printf("File downloaded successfully: %s\n", fileName)
 	return nil
+}
+
+func ProcessInputPlaylist(urlArg string) string {
+	u, err := url.Parse(urlArg)
+	if err != nil {
+		log.Print(err)
+		return ""
+	}
+
+	queryObj, _ := url.ParseQuery(u.RawQuery)
+	playListId := queryObj["list"][0]
+
+	return fmt.Sprintf("https://youtube.com/playlist?list=%s", playListId)
+
 }
