@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
+        include: 
           - target: x86_64-unknown-linux-musl
             goos: linux
             goarch: amd64
